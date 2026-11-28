@@ -15,6 +15,7 @@ ROOT = activate()
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--headless", action="store_true")
+    parser.add_argument("--scene", type=Path, help="alternate scene for grid runs with explicit goals")
     parser.add_argument("--planner", choices=("waypoints", "grid"), default="waypoints")
     parser.add_argument("--localization", choices=("sim", "slam"), default="sim",
                         help="Grid feedback from simulator pose or Stretch Mini SLAM")
@@ -34,6 +35,10 @@ def main():
     timeout = args.timeout if args.timeout is not None else (150 if args.planner == "grid" else 45)
     if args.planner != "grid" and (args.goal or args.capture_dir):
         parser.error("--goal and --capture-dir require --planner grid")
+    if args.scene and (args.planner != "grid" or not args.goal):
+        parser.error("--scene requires --planner grid and explicit --goal values")
+    if args.scene and args.localization == "slam" and args.initial_pose is None:
+        parser.error("SLAM on an alternate --scene requires --initial-pose")
     if args.localization == "slam" and args.planner != "grid":
         parser.error("--localization slam requires --planner grid")
     if args.localization != "slam" and (args.initial_pose or args.map_in or args.map_out):
@@ -52,8 +57,8 @@ def main():
         os.environ.setdefault("MUJOCO_GL", "glfw" if sys.platform == "win32" else "egl")
     from robot.robot_interface import RobotInterface
     from navigation.navigation_interface import navigate
-    scene = ROOT / "scenes/kitchen/generated/kitchen.xml"
-    metadata = json.loads(scene.with_name("metadata.json").read_text())
+    scene = args.scene or ROOT / "scenes/kitchen/generated/kitchen.xml"
+    metadata = {} if args.scene else json.loads(scene.with_name("metadata.json").read_text())
     reference_grid = None
     if args.localization == "slam":
         from navigation.slam_navigation import StretchSLAM, load_map, save_map

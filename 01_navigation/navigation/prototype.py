@@ -10,7 +10,7 @@ from .docking import Station
 from .grid_navigation import GridNavigationSession
 from .planning import StaticGrid
 from .slam_navigation import StretchSLAM, load_map
-from .tracking import Pose
+from .tracking import DEFAULT_CRUISE_SPEED, Pose
 
 
 DEFAULT_PROFILE = Path(__file__).resolve().parents[1] / "maps" / "kitchen" / "profile.json"
@@ -25,6 +25,8 @@ class NavigationProfile:
     footprint_radius: float
     stations: dict[str, Station]
     keepouts: tuple[tuple[float, float, float, float], ...]
+    cruise_speed: float = DEFAULT_CRUISE_SPEED
+    obstacles: tuple[tuple[float, float, float, float], ...] = ()
 
 
 def load_profile(path=None):
@@ -37,8 +39,12 @@ def load_profile(path=None):
         footprint_radius = float(config["footprint_radius_m"])
         if not 0 < footprint_radius < math.inf:
             raise ValueError("Expected a positive finite footprint radius")
+        cruise_speed = float(config.get("cruise_speed_m_s", DEFAULT_CRUISE_SPEED))
+        if not 0 < cruise_speed < math.inf:
+            raise ValueError("Expected a positive finite cruise speed")
         keepouts = tuple(tuple(map(float, bounds)) for bounds in config.get("keepouts", ()))
-        StaticGrid._validate_clearance(0.0, keepouts)
+        obstacles = tuple(tuple(map(float, bounds)) for bounds in config.get("obstacles", ()))
+        StaticGrid._validate_clearance(0.0, keepouts + obstacles)
         stations = {
             name: Station(Pose(*map(float, entry["pose"])), float(entry["stand_range"]),
                           float(entry.get("approach_distance", 0.35)))
@@ -48,7 +54,7 @@ def load_profile(path=None):
             raise ValueError("Expected station definitions for A and B")
         return NavigationProfile(config["name"], (path.parent / config["scene"]).resolve(),
                                  initial_pose, load_map(path.parent / config["map"]),
-                                 footprint_radius, stations, keepouts)
+                                 footprint_radius, stations, keepouts + obstacles, cruise_speed, obstacles)
     except (AttributeError, KeyError, TypeError, ValueError, OverflowError) as error:
         raise ValueError(f"Invalid navigation profile {path}: {error}") from error
 
@@ -69,7 +75,8 @@ def open_session(profile, *, viewer=False, realtime=True, cameras=False):
             configure_overview(robot.viewer.cam)
         slam = StretchSLAM(robot, profile.initial_pose, reference_grid=profile.grid)
         session = GridNavigationSession(robot, profile.grid, keepouts=profile.keepouts,
-                                        radius=profile.footprint_radius, slam=slam)
+                                        radius=profile.footprint_radius, slam=slam,
+                                        cruise_speed=profile.cruise_speed)
         try:
             yield session
         finally:

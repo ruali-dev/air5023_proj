@@ -1,0 +1,19 @@
+{
+  "name": "West Aisle Navigation Experiment",
+  "scene": "../../../scenes/kitchen/generated/kitchen_navigation_experiment.xml",
+  "initial_pose": [0.50, -1.40, -1.5707963267948966],
+  "map": "grids.json",
+  "footprint_radius_m": 0.43,
+  "cruise_speed_m_s": 0.30,
+  "obstacles": [[0.49, -2.88, 0.81, -2.52]],
+  "stations": {
+    "A": {"pose": [0.10, -3.65, 3.141592653589793], "stand_range": 1.10},
+    "B": {"pose": [0.10, -1.50, 3.141592653589793], "stand_range": 1.10}
+  },
+  "keepouts": [
+    [1.375, -3.35, 4.125, -1.95],
+    [1.88, -3.50, 3.62, -3.25],
+    [1.25, -0.65, 5.05, 0.0],
+    [-1.05, -5.55, 5.35, -5.04]
+  ]
+}

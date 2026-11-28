@@ -6,6 +6,9 @@ from dataclasses import dataclass
 import math
 
 
+DEFAULT_CRUISE_SPEED = 0.22
+
+
 @dataclass(frozen=True)
 class Pose:
     x: float = 0.0
@@ -44,18 +47,23 @@ class RouteTracker:
     WAYPOINT_TOLERANCE = 0.045
     HEADING_TOLERANCE = 0.035
     ALIGN_THRESHOLD = 0.32
+    CRUISE_RAMP_START = 0.10
+    CRUISE_RAMP_LENGTH = 0.25
     CRUISE_LOOKAHEAD = 0.18
     CROSS_TRACK_GAIN = 2.0
     MAX_CROSS_TRACK_ANGLE = 0.50
 
-    def __init__(self, route: Route, *, max_vx: float, max_wz: float):
+    def __init__(self, route: Route, *, max_vx: float, max_wz: float,
+                 cruise_speed: float = DEFAULT_CRUISE_SPEED):
         if not math.isfinite(max_vx) or max_vx <= 0:
             raise ValueError("max_vx must be positive and finite")
         if not math.isfinite(max_wz) or max_wz <= 0:
             raise ValueError("max_wz must be positive and finite")
+        if not math.isfinite(cruise_speed) or cruise_speed <= 0:
+            raise ValueError("Cruise speed must be positive and finite")
         self.waypoints = route.waypoints
         self.goal_yaw = route.goal_yaw
-        self.max_vx = min(float(max_vx), 0.22)
+        self.max_vx = min(float(max_vx), cruise_speed)
         self.max_wz = min(float(max_wz), 0.75)
         self._segment_index = 0
         self._aligning_at_goal = False
@@ -92,8 +100,11 @@ class RouteTracker:
         cross_track = (dx * (pose.y - segment_start[1])
                        - dy * (pose.x - segment_start[0])) / length
         segment_distance = math.dist((pose.x, pose.y), segment_end)
-        speed = min(self.max_vx, 0.25 * math.sqrt(segment_distance),
-                    max(0.035, 0.65 * segment_distance))
+        approach_speed = min(0.25 * math.sqrt(segment_distance), max(0.035, 0.65 * segment_distance))
+        # A higher cruise setting tapers back to the normal approach speed before each waypoint.
+        ramp = min(1.0, max(0.0, (segment_distance - self.CRUISE_RAMP_START) / self.CRUISE_RAMP_LENGTH))
+        cruise_bonus = max(0.0, self.max_vx - DEFAULT_CRUISE_SPEED)
+        speed = min(self.max_vx, approach_speed + ramp * cruise_bonus)
         cross_track_angle = math.atan2(
             self.CROSS_TRACK_GAIN * cross_track,
             max(speed, self.CRUISE_LOOKAHEAD),

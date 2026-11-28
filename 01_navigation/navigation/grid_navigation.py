@@ -6,7 +6,7 @@ import math
 from .docking import station_depth
 from .planning import plan_route
 from .scene_grid import SceneGrid, build_scene_grid, robot_radius
-from .tracking import Pose, Route, RouteTracker
+from .tracking import DEFAULT_CRUISE_SPEED, Pose, Route, RouteTracker
 
 
 class GridNavigationError(RuntimeError):
@@ -25,12 +25,13 @@ class GridNavigationSession:
     """Own navigation commands and pose feedback for one continuous simulator run."""
 
     def __init__(self, robot, navigation_grid, *, pose_source=None, keepouts=(),
-                 radius=None, slam=None):
+                 radius=None, slam=None, cruise_speed=DEFAULT_CRUISE_SPEED):
         self.robot = robot
         self.grid = navigation_grid
         self.keepouts = tuple(keepouts)
         self.radius = robot_radius(robot.model, robot.data) if radius is None else radius
         self.slam = slam
+        self.cruise_speed = cruise_speed
         self._read_pose = pose_source or (slam.read_pose if slam else lambda: _read_pose(robot))
         self.pose = self._read_pose()
 
@@ -89,7 +90,8 @@ class GridNavigationSession:
 
     def _follow(self, route, deadline, cancelled, on_update):
         robot = self.robot
-        tracker = RouteTracker(route, max_vx=robot.base_limits[0], max_wz=robot.base_limits[1])
+        tracker = RouteTracker(route, max_vx=robot.base_limits[0], max_wz=robot.base_limits[1],
+                               cruise_speed=self.cruise_speed)
         while not cancelled() and robot.data.time < deadline:
             command = tracker.update(self.pose)
             if command.reached:
