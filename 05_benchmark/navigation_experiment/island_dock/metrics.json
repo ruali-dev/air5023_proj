@@ -1,0 +1,71 @@
+{
+  "visits": [
+    {
+      "station": "A",
+      "goal": {
+        "x": 3.55,
+        "y": -1.3,
+        "yaw": 0.0
+      },
+      "pose": {
+        "x": 3.52545285150938,
+        "y": -1.2957280543401517,
+        "yaw": -0.034436132412815734
+      },
+      "path": [
+        [
+          2.2,
+          -1.3
+        ],
+        [
+          2.975,
+          -1.175
+        ],
+        [
+          3.55,
+          -1.3
+        ]
+      ],
+      "sim_time": 45.10000000000915,
+      "truth_pose": [
+        3.495317893062829,
+        -1.3081244197191633,
+        -0.028451748792422033
+      ],
+      "position_error_m": 0.05528235717533497,
+      "heading_error_rad": 0.02845174879242185
+    }
+  ],
+  "start_pose": [
+    2.2,
+    -1.3,
+    0.0
+  ],
+  "obstacles": [
+    [
+      2.76,
+      -1.9,
+      3.0,
+      -1.72
+    ]
+  ],
+  "cruise_speed_m_s": 0.3,
+  "matches_accepted": 2,
+  "matches_attempted": 17,
+  "contact_pairs_at_control_ticks": [],
+  "sample_count": 853,
+  "pose_errors": {
+    "wheel": {
+      "position_rmse_m": 0.025365180914247765,
+      "heading_rmse_rad": 0.015453904522328128
+    },
+    "fused": {
+      "position_rmse_m": 0.023382648740151026,
+      "heading_rmse_rad": 0.004577718118880921
+    },
+    "slam": {
+      "position_rmse_m": 0.03773421664049113,
+      "heading_rmse_rad": 0.004577718118880921
+    }
+  }
+}

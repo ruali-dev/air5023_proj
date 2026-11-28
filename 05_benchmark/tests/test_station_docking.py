@@ -1,8 +1,10 @@
 import math
+import json
 
 import pytest
 
 from navigation.docking import Station, station_depth
+from navigation.grid_navigation import GridNavigationSession
 from navigation.map_exports import rasterize
 from navigation.mini_slam.core import LidarModel, SensorSample
 from navigation.planning import StaticGrid, plan_route
@@ -42,3 +44,48 @@ def test_kitchen_profile_and_measured_grid_allow_both_station_approaches():
         assert plan_route(profile.grid, start, approach, footprint_radius=radius, keepouts=profile.keepouts)
         assert profile.grid.is_segment_clear(approach, goal, footprint_radius=radius, keepouts=profile.keepouts)
         start = goal
+
+
+def test_pose_only_station_profile_and_navigation_preserve_goal_heading(tmp_path):
+    map_path = tmp_path / "free-map.json"
+    map_path.write_text(json.dumps({"resolution_m": 0.1,
+                                    "slam": [[x, y, -5.0] for x in range(10)
+                                             for y in range(10)]}), encoding="utf-8")
+    payload = {
+        "name": "Pose-only station",
+        "scene": "scene.xml",
+        "initial_pose": [0.25, 0.25, 0.0],
+        "map": str(map_path),
+        "footprint_radius_m": 0.1,
+        "stations": {"A": {"pose": [0.75, 0.75, math.pi / 2]}},
+    }
+    profile_path = tmp_path / "profile.json"
+    profile_path.write_text(json.dumps(payload), encoding="utf-8")
+    profile = load_profile(profile_path)
+    station = profile.stations["A"]
+
+    assert not station.uses_lidar_docking
+    assert station.pose == Pose(0.75, 0.75, math.pi / 2)
+
+    class _Robot:
+        class Data:
+            time = 0.0
+
+        data = Data()
+
+    session = GridNavigationSession(_Robot(), profile.grid, pose_source=lambda: Pose(*profile.initial_pose),
+                                    radius=profile.footprint_radius)
+    followed = []
+
+    def follow(route, *_args):
+        followed.append(route)
+        session.pose = station.pose
+
+    session._follow = follow
+    session._dock = lambda *_args: pytest.fail("pose-only station should not use LiDAR docking")
+    visit = session._go(station.pose, deadline=10.0, station=station)
+
+    assert visit.goal == station.pose
+    assert len(followed) == 1
+    assert followed[0].goal_yaw == math.pi / 2
+    assert followed[0].waypoints[-1] == (station.pose.x, station.pose.y)

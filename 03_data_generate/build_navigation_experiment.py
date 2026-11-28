@@ -40,8 +40,9 @@ def build(base_scene, profile_path):
     if keyframe is not None:
         scene.remove(keyframe)  # The original keys encode the old spawn.
     scene.set("model", "stretch_kitchen_navigation_experiment")
-    ET.SubElement(world, "camera", name="navigation_overview", pos="0.18 -2.48 6.2",
-                  xyaxes="1 0 0 0 1 0", fovy="36")
+    camera_x, camera_y, camera_z = profile.get("overview_camera", (0.18, -2.48, 6.2))
+    ET.SubElement(world, "camera", name="navigation_overview",
+                  pos=f"{camera_x} {camera_y} {camera_z}", xyaxes="1 0 0 0 1 0", fovy="36")
 
     names = []
     for index, (xmin, ymin, xmax, ymax) in enumerate(profile["obstacles"], start=1):

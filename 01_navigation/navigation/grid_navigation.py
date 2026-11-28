@@ -56,8 +56,13 @@ class GridNavigationSession:
 
     def _go(self, goal, deadline, station=None, cancelled=lambda: False,
             on_plan=lambda route: None, on_update=lambda pose, phase: None):
-        if station is not None and (station.pose != goal or self.slam is None):
-            raise ValueError("Station docking requires its configured goal and Stretch LiDAR")
+        if station is not None:
+            if station.pose != goal:
+                raise ValueError("Station pose must match its goal")
+            if station.uses_lidar_docking and self.slam is None:
+                raise ValueError("LiDAR docking requires Stretch SLAM")
+            if not station.uses_lidar_docking:
+                station = None
         approach = goal if station is None else station.approach
         start = self.pose
         if station is not None:

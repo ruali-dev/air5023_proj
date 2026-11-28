@@ -58,11 +58,13 @@ class NavigationEvaluation:
         _, x, y, yaw = self.truth[-1]
         slam = self.session.slam
         station = visit.goal
+        station_config = self.profile.stations[label]
         result = {"station": label, **asdict(visit), "truth_pose": [x, y, yaw],
                   "position_error_m": math.dist((x, y), (station.x, station.y)),
-                  "heading_error_rad": abs(angle_difference(yaw, station.yaw)),
-                  "depth_residual_m": station_depth(self.profile.stations[label], visit.pose,
-                                                    slam.sensors.lidar, slam.latest_sample)}
+                  "heading_error_rad": abs(angle_difference(yaw, station.yaw))}
+        if station_config.uses_lidar_docking:
+            result["depth_residual_m"] = station_depth(station_config, visit.pose,
+                                                       slam.sensors.lidar, slam.latest_sample)
         if self.robot.camera_manager:
             from PIL import Image
 
@@ -136,6 +138,12 @@ def main():
     from navigation.prototype import load_profile, open_session
 
     profile = load_profile(args.profile)
+    if args.station is None and set(profile.stations) == {"A"}:
+        args.station = ["A"]
+    if args.station is not None:
+        missing = [label for label in args.station if label not in profile.stations]
+        if missing:
+            parser.error(f"Unknown station(s) for this profile: {', '.join(missing)}")
     if args.cruise_speed is not None:
         if not 0 < args.cruise_speed < math.inf:
             parser.error("--cruise-speed must be positive and finite")
@@ -145,7 +153,7 @@ def main():
         evaluation = NavigationEvaluation(session, profile, args.out)
         try:
             result = evaluation.run(args.station)
-            if args.station:
+            if args.station is not None:
                 result.update(start_pose=profile.initial_pose, obstacles=profile.obstacles,
                               cruise_speed_m_s=min(profile.cruise_speed, float(session.robot.base_limits[0])))
         except Exception as error:

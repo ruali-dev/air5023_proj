@@ -1,0 +1,17 @@
+{
+  "name": "Island Dock Navigation Experiment",
+  "scene": "../../../scenes/kitchen/generated/kitchen_island_dock_experiment.xml",
+  "initial_pose": [2.20, -1.30, 0.0],
+  "map": "grids.json",
+  "footprint_radius_m": 0.43,
+  "cruise_speed_m_s": 0.30,
+  "obstacles": [[2.76, -1.90, 3.00, -1.72]],
+  "overview_camera": [2.88, -1.36, 4.80],
+  "stations": {"A": {"pose": [3.55, -1.30, 0.0]}},
+  "keepouts": [
+    [1.375, -3.35, 4.125, -1.95],
+    [1.88, -3.50, 3.62, -3.25],
+    [1.25, -0.65, 5.05, 0.0],
+    [-1.05, -5.55, 5.35, -5.04]
+  ]
+}

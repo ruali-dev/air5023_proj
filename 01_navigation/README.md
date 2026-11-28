@@ -2,7 +2,7 @@
 
 这个原型将已有的 Mini 2D SLAM、A*、底盘跟踪和 Web Console 接入 Stretch 的 MuJoCo 仿真。底盘导航和巡检可在项目的 RoboCasa 厨房中独立运行。总分工见 [协作手册](../docs/development/README.md)。
 
-[西侧通道导航定位实验](../05_benchmark/navigation_experiment/README.md) 提供独立绕障场景、采集地图、同轨迹定位对比和 Pre 复现命令。
+[岛台北侧短路线](../05_benchmark/navigation_experiment/island_dock/README.md) 是 Pre 的主场景，提供独立地图、绕箱到原红杯底盘停靠位的路线及同轨迹定位对比。[西侧通道实验](../05_benchmark/navigation_experiment/README.md) 保留完整巡检记录。
 
 ## 实时 Web Console
 

@@ -46,12 +46,13 @@ def load_profile(path=None):
         obstacles = tuple(tuple(map(float, bounds)) for bounds in config.get("obstacles", ()))
         StaticGrid._validate_clearance(0.0, keepouts + obstacles)
         stations = {
-            name: Station(Pose(*map(float, entry["pose"])), float(entry["stand_range"]),
+            name: Station(Pose(*map(float, entry["pose"])),
+                          None if entry.get("stand_range") is None else float(entry["stand_range"]),
                           float(entry.get("approach_distance", 0.35)))
             for name, entry in config["stations"].items()
         }
-        if stations.keys() != {"A", "B"}:
-            raise ValueError("Expected station definitions for A and B")
+        if "A" not in stations or not stations.keys() <= {"A", "B"}:
+            raise ValueError("Expected station A and optional station B")
         return NavigationProfile(config["name"], (path.parent / config["scene"]).resolve(),
                                  initial_pose, load_map(path.parent / config["map"]),
                                  footprint_radius, stations, keepouts + obstacles, cruise_speed, obstacles)

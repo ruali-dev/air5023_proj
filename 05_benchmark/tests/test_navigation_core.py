@@ -77,16 +77,18 @@ def test_faster_cruise_respects_base_limit_and_tapers_before_waypoints():
 def test_experiment_map_supports_detour_and_terminal_approach():
     from navigation.prototype import DEFAULT_PROFILE, load_profile
 
-    profile = load_profile(DEFAULT_PROFILE.parent.parent / "patrol_experiment/profile.json")
-    station = profile.stations["A"]
-    start = profile.initial_pose[:2]
-    approach = (station.approach.x, station.approach.y)
-    stop = (station.pose.x, station.pose.y)
-    clearance = {"footprint_radius": profile.footprint_radius + 0.05, "keepouts": profile.keepouts}
-    assert not profile.grid.is_segment_clear(start, approach, **clearance)
-    route = plan_route(profile.grid, start, approach, **clearance)
-    assert route is not None and len(route.waypoints) > 2
-    assert profile.grid.is_segment_clear(approach, stop, **clearance)
+    for experiment in ("patrol_experiment", "island_dock_experiment"):
+        profile = load_profile(DEFAULT_PROFILE.parent.parent / experiment / "profile.json")
+        station = profile.stations["A"]
+        start = profile.initial_pose[:2]
+        approach_pose = station.approach if station.uses_lidar_docking else station.pose
+        approach = (approach_pose.x, approach_pose.y)
+        stop = (station.pose.x, station.pose.y)
+        clearance = {"footprint_radius": profile.footprint_radius + 0.05, "keepouts": profile.keepouts}
+        assert not profile.grid.is_segment_clear(start, approach, **clearance)
+        route = plan_route(profile.grid, start, approach, **clearance)
+        assert route is not None and len(route.waypoints) > 2
+        assert profile.grid.is_segment_clear(approach, stop, **clearance)
 
 
 def test_route_respects_rectangular_keepouts():
